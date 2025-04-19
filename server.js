@@ -9,6 +9,7 @@ app.use(express.static('public'));
 const salas = {};
 const SMALL_BLIND = 1;
 const BIG_BLIND = 2;
+const FASES = ['PreFlop', 'Flop', 'Turn', 'River'];
 
 io.on('connection', socket => {
   console.log('Nuevo jugador conectado:', socket.id);
@@ -23,7 +24,10 @@ io.on('connection', socket => {
         turno: null,
         pozo: 0,
         apuestaActual: 0,
-        sbIndex: 0
+        fase: 'PreFlop',
+        indiceDealer: 0,
+        sbId: null,
+        bbId: null
       };
     }
 
@@ -34,8 +38,7 @@ io.on('connection', socket => {
       retirado: false,
       apuestaRonda: 0,
       ultimaApuesta: 0,
-      listo: false,
-      rol: ''
+      listo: false
     };
 
     sala.ordenTurnos.push(socket.id);
@@ -46,44 +49,20 @@ io.on('connection', socket => {
   socket.on('marcarListo', (salaId) => {
     const sala = salas[salaId];
     if (!sala || !sala.jugadores[socket.id]) return;
-
-    sala.jugadores[socket.id].listo = true;
-
-    const todosListos = sala.ordenTurnos.every(id => sala.jugadores[id].listo);
-
-    if (todosListos && sala.ordenTurnos.length >= 2) {
-      const sbIdx = sala.sbIndex % sala.ordenTurnos.length;
-      const bbIdx = (sbIdx + 1) % sala.ordenTurnos.length;
-
-      const sbId = sala.ordenTurnos[sbIdx];
-      const bbId = sala.ordenTurnos[bbIdx];
-
-      const sb = sala.jugadores[sbId];
-      const bb = sala.jugadores[bbId];
-
-      sb.balance -= SMALL_BLIND;
-      sb.apuestaRonda = SMALL_BLIND;
-      sb.ultimaApuesta = SMALL_BLIND;
-      sb.rol = 'SB';
-
-      bb.balance -= BIG_BLIND;
-      bb.apuestaRonda = BIG_BLIND;
-      bb.ultimaApuesta = BIG_BLIND;
-      bb.rol = 'BB';
-
-      sala.pozo = SMALL_BLIND + BIG_BLIND;
-      sala.apuestaActual = BIG_BLIND;
-
-      // Turno comienza desde el siguiente jugador después de BB
-      let idx = (bbIdx + 1) % sala.ordenTurnos.length;
-      sala.turno = sala.ordenTurnos.find((_, i) =>
-        !sala.jugadores[sala.ordenTurnos[(bbIdx + i + 1) % sala.ordenTurnos.length]].retirado
-      );
+  
+    // Solo permitir marcar "Listo" si es el inicio del juego (antes de la primera mano)
+    if (sala.fase === 'PreFlop' && !sala.jugadores[socket.id].listo) {
+      sala.jugadores[socket.id].listo = true;
+  
+      const todosListos = sala.ordenTurnos.every(id => sala.jugadores[id].listo);
+  
+      if (todosListos && sala.ordenTurnos.length >= 2) {
+        iniciarMano(salaId); // Iniciar la mano si todos están listos
+      }
+  
+      actualizarEstado(salaId);
     }
-
-    actualizarEstado(salaId);
   });
-
   socket.on('accion', ({ salaId, tipo, cantidad }) => {
     const sala = salas[salaId];
     const jugador = sala?.jugadores[socket.id];
@@ -118,28 +97,57 @@ io.on('connection', socket => {
     actualizarEstado(salaId);
   });
 
-  socket.on('siguienteMano', ({ salaId, ganadorId }) => {
-    const sala = salas[salaId];
-    if (!sala || !sala.jugadores[ganadorId]) return;
+// Evento para pasar a la siguiente mano
+socket.on('siguienteMano', ({ salaId, ganadorId }) => {
+  const sala = salas[salaId];
+  if (!sala || !sala.jugadores[ganadorId]) return;
 
-    sala.jugadores[ganadorId].balance += sala.pozo;
+  // Asignar el pozo al ganador
+  sala.jugadores[ganadorId].balance += sala.pozo;
 
-    for (let id of sala.ordenTurnos) {
-      const jugador = sala.jugadores[id];
-      jugador.retirado = false;
-      jugador.apuestaRonda = 0;
-      jugador.ultimaApuesta = 0;
-      jugador.listo = false;
-      jugador.rol = '';
-    }
+  // Reiniciar estado para la siguiente mano
+  sala.pozo = 0;
+  sala.apuestaActual = 0;
+  sala.fase = 'PreFlop';
 
-    sala.apuestaActual = 0;
-    sala.pozo = 0;
-    sala.sbIndex = (sala.sbIndex + 1) % sala.ordenTurnos.length;
-    sala.turno = null;
-
-    actualizarEstado(salaId);
+  // Desmarcar a todos los jugadores como retirados y resetear apuestas
+  sala.ordenTurnos.forEach(id => {
+    sala.jugadores[id].retirado = false;
+    sala.jugadores[id].apuestaRonda = 0;
+    sala.jugadores[id].ultimaApuesta = 0;
   });
+
+  // Rotar la ciega pequeña y la ciega grande
+  sala.indiceDealer = (sala.indiceDealer + 1) % sala.ordenTurnos.length;
+  const dealerIdx = sala.indiceDealer;
+  const sbIdx = (dealerIdx + 1) % sala.ordenTurnos.length;
+  const bbIdx = (dealerIdx + 2) % sala.ordenTurnos.length;
+
+  const sbId = sala.ordenTurnos[sbIdx];
+  const bbId = sala.ordenTurnos[bbIdx];
+
+  // Asignar las ciegas a los jugadores correspondientes
+  sala.sbId = sbId;
+  sala.bbId = bbId;
+
+  sala.jugadores[sbId].balance -= SMALL_BLIND;
+  sala.jugadores[sbId].apuestaRonda = SMALL_BLIND;
+  sala.jugadores[sbId].ultimaApuesta = SMALL_BLIND;
+
+  sala.jugadores[bbId].balance -= BIG_BLIND;
+  sala.jugadores[bbId].apuestaRonda = BIG_BLIND;
+  sala.jugadores[bbId].ultimaApuesta = BIG_BLIND;
+
+  sala.apuestaActual = BIG_BLIND;
+
+  // Definir el primer jugador para la nueva mano (el siguiente jugador después de BB)
+  const primerJugadorIdx = (bbIdx + 1) % sala.ordenTurnos.length;
+  sala.turno = sala.ordenTurnos[primerJugadorIdx];
+
+  // Actualizar el estado
+  actualizarEstado(salaId);
+});
+
 
   socket.on('disconnect', () => {
     for (let salaId in salas) {
@@ -155,6 +163,33 @@ io.on('connection', socket => {
     }
   });
 });
+
+function iniciarMano(salaId) {
+  const sala = salas[salaId];
+
+  const dealerIdx = sala.indiceDealer;
+  const sbIdx = (dealerIdx + 1) % sala.ordenTurnos.length;
+  const bbIdx = (dealerIdx + 2) % sala.ordenTurnos.length;
+  const sbId = sala.ordenTurnos[sbIdx];
+  const bbId = sala.ordenTurnos[bbIdx];
+
+  sala.sbId = sbId;
+  sala.bbId = bbId;
+
+  sala.jugadores[sbId].balance -= SMALL_BLIND;
+  sala.jugadores[sbId].apuestaRonda = SMALL_BLIND;
+  sala.jugadores[sbId].ultimaApuesta = SMALL_BLIND;
+
+  sala.jugadores[bbId].balance -= BIG_BLIND;
+  sala.jugadores[bbId].apuestaRonda = BIG_BLIND;
+  sala.jugadores[bbId].ultimaApuesta = BIG_BLIND;
+
+  sala.apuestaActual = BIG_BLIND;
+  sala.fase = 'PreFlop';
+
+  const primerJugadorIdx = (bbIdx + 1) % sala.ordenTurnos.length;
+  sala.turno = sala.ordenTurnos[primerJugadorIdx];
+}
 
 function avanzarTurno(salaId) {
   const sala = salas[salaId];
@@ -188,6 +223,21 @@ function avanzarTurno(salaId) {
       sala.jugadores[id].apuestaRonda = 0;
     }
     sala.apuestaActual = 0;
+
+    const idxFase = FASES.indexOf(sala.fase);
+    if (idxFase < FASES.length - 1) {
+      sala.fase = FASES[idxFase + 1];
+      // Reinicia turnos postflop, empieza desde SB o el siguiente no retirado
+      const sbIdx = sala.ordenTurnos.indexOf(sala.sbId);
+      for (let i = 0; i < sala.ordenTurnos.length; i++) {
+        const idx = (sbIdx + i) % sala.ordenTurnos.length;
+        const candidato = sala.ordenTurnos[idx];
+        if (!sala.jugadores[candidato].retirado) {
+          sala.turno = candidato;
+          break;
+        }
+      }
+    }
   }
 }
 
@@ -195,17 +245,38 @@ function actualizarEstado(salaId) {
   const sala = salas[salaId];
   if (!sala) return;
 
+  // Crear un objeto con los jugadores donde los que tienen ciega pequeña y grande tienen las etiquetas
+  const jugadoresConCiegas = {};
+
+  for (let id in sala.jugadores) {
+    const jugador = sala.jugadores[id];
+    let nombre = jugador.nombre;
+
+    // Añadir la etiqueta de Ciega Pequeña o Ciega Grande
+    if (id === sala.sbId) {
+      nombre += ' (CP)';  // Ciega Pequeña
+    } else if (id === sala.bbId) {
+      nombre += ' (CG)';  // Ciega Grande
+    }
+
+    jugadoresConCiegas[id] = { ...jugador, nombre };
+  }
+
+  // Emitir el estado actualizado con los jugadores modificados
   io.to(salaId).emit('estadoActualizado', {
-    jugadores: sala.jugadores,
+    jugadores: jugadoresConCiegas,
     pozo: sala.pozo,
     turno: sala.turno,
     apuestaActual: sala.apuestaActual,
     salaId: salaId,
     todosListos: sala.ordenTurnos.every(id => sala.jugadores[id].listo),
-    ordenTurnos: sala.ordenTurnos
+    fase: sala.fase,
+    sbId: sala.sbId,
+    bbId: sala.bbId
   });
 }
 
+
 http.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
-});
+});  
