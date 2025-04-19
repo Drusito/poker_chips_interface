@@ -5,11 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Juego de Póker</title>
   <style>
-    body { font-family: Arial, sans-serif; }
-    .hidden { display: none; }
-    #estadoSala { margin-top: 20px; }
-    button { margin: 10px; padding: 10px; }
-    #jugadores li { margin-bottom: 5px; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(145deg, #1a1a1a, #222);
+      color: #eee;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: gold;
+      text-align: center;
+    }
+
+    #estadoSala {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+
+    #turno {
+      font-size: 1.5rem;
+      margin: 10px 0;
+      color: #00bfff;
+      text-align: center;
+    }
+
+    #pozo {
+      font-size: 1.2rem;
+      text-align: center;
+      margin-bottom: 10px;
+      color: #FFD700;
+    }
+
+    #jugadores {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    #jugadores li {
+      margin-bottom: 8px;
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 6px;
+      border-left: 4px solid #FFD700;
+    }
+
+    #acciones input,
+    #acciones button {
+      margin: 5px;
+      padding: 8px;
+      background-color: #444;
+      color: white;
+      border-radius: 6px;
+      border: none;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      background-color: #444;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #666;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 6px;
+      border: 1px solid #333;
+      background-color: #111;
+      color: white;
+    }
+
+    select {
+      padding: 8px;
+      background-color: #111;
+      color: white;
+      border-radius: 6px;
+      border: 1px solid #333;
+    }
   </style>
 </head>
 <body>
