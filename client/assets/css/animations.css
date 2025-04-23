@@ -1,0 +1,167 @@
+
+/* Animaciones para el juego de póker
+*/
+
+/* Animación de fichas */
+.chip-animation {
+ position: absolute;
+ width: 30px;
+ height: 30px;
+ border-radius: 50%;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+ z-index: 100;
+ transition: all 0.5s ease;
+ text-align: center;
+ font-size: 10px;
+ color: white;
+ font-weight: bold;
+}
+
+/* Animación para jugador ganador */
+.winner {
+ animation: winner-pulse 1.5s infinite;
+ box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+ z-index: 10;
+}
+
+@keyframes winner-pulse {
+ 0% { transform: scale(1); }
+ 50% { transform: scale(1.05); }
+ 100% { transform: scale(1); }
+}
+
+/* Notificación de turno */
+.turn-notification {
+ position: fixed;
+ top: 20px;
+ left: 50%;
+ transform: translateX(-50%) translateY(-100px);
+ background-color: rgba(0, 0, 0, 0.8);
+ color: white;
+ padding: 10px 20px;
+ border-radius: 8px;
+ font-size: 1.2rem;
+ z-index: 1000;
+ opacity: 0;
+ transition: all 0.5s ease;
+}
+
+.turn-notification.show {
+ transform: translateX(-50%) translateY(0);
+ opacity: 1;
+}
+
+/* Animación de entrada para elementos */
+@keyframes fadeIn {
+ from { opacity: 0; }
+ to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+ from {
+   transform: translate3d(0, 20px, 0);
+   opacity: 0;
+ }
+ to {
+   transform: translate3d(0, 0, 0);
+   opacity: 1;
+ }
+}
+
+@keyframes slideInDown {
+ from {
+   transform: translate3d(0, -20px, 0);
+   opacity: 0;
+ }
+ to {
+   transform: translate3d(0, 0, 0);
+   opacity: 1;
+ }
+}
+
+@keyframes pulse {
+ 0% { transform: scale(1); }
+ 50% { transform: scale(1.05); }
+ 100% { transform: scale(1); }
+}
+
+@keyframes shake {
+ 0%, 100% { transform: translateX(0); }
+ 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+ 20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Animación para los botones */
+.action-btn:hover {
+ animation: pulse 0.5s;
+}
+
+/* Animación para el temporizador */
+@keyframes timerWarning {
+ 0% { background-color: #dc3545; }
+ 50% { background-color: #ff8c8c; }
+ 100% { background-color: #dc3545; }
+}
+
+.timer-bar.warning {
+ animation: timerWarning 0.5s infinite;
+}
+
+/* Animaciones para transiciones entre pantallas */
+.screen {
+ transition: opacity 0.5s ease;
+ opacity: 0;
+ pointer-events: none;
+}
+
+.screen.active {
+ opacity: 1;
+ pointer-events: auto;
+}
+
+/* Animación para cartas */
+@keyframes dealCard {
+ from {
+   transform: translate(-50%, -50%) scale(0.5) rotate(180deg);
+   opacity: 0;
+ }
+ to {
+   transform: translate(0, 0) scale(1) rotate(0deg);
+   opacity: 1;
+ }
+}
+
+/* Animación para acciones */
+.action-area {
+ transition: all 0.3s ease;
+ transform-origin: bottom center;
+}
+
+.action-area.hidden {
+ transform: translateY(20px) scale(0.95);
+ opacity: 0;
+}
+
+/* Animación para mensajes */
+.chat-message {
+ animation: slideInUp 0.3s;
+}
+
+/* Animaciones para jugadores que se unen */
+.player {
+ animation: fadeIn 0.5s;
+}
+
+/* Animación para el marcador de turno */
+@keyframes turnPulse {
+ 0% { transform: scale(1); }
+ 50% { transform: scale(1.2); }
+ 100% { transform: scale(1); }
+}
+
+.turn-badge {
+ animation: turnPulse 1.5s infinite;
+}
