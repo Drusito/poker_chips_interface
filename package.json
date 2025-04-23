@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
     "name": "poker-game",
     "version": "1.0.0",
@@ -28,4 +29,36 @@
     "engines": {
       "node": ">=14.0.0"
     }
+=======
+{
+    "name": "poker-game",
+    "version": "1.0.0",
+    "description": "Juego de Póker Multijugador en Tiempo Real",
+    "main": "server/index.js",
+    "scripts": {
+      "start": "node server/index.js",
+      "dev": "nodemon server/index.js",
+      "test": "jest"
+    },
+    "keywords": [
+      "poker",
+      "game",
+      "socket.io",
+      "express",
+      "nodejs"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+      "express": "^4.18.2",
+      "socket.io": "^4.7.1"
+    },
+    "devDependencies": {
+      "jest": "^29.5.0",
+      "nodemon": "^2.0.22"
+    },
+    "engines": {
+      "node": ">=14.0.0"
+    }
+>>>>>>> 9b8b9b440cfea42ca610c79fcd0c5e8816fcd5f6
   }
